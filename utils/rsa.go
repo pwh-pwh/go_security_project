@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"io/ioutil"
 	"os"
 )
 
@@ -31,4 +32,44 @@ func SaveRsaKey(bit int) error {
 		return err
 	}
 	return nil
+}
+
+func RsaEncoding(src []byte, path string) ([]byte, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	bytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+	block, _ := pem.Decode(bytes)
+	publicKey, err := x509.ParsePKCS1PublicKey(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+	result, err := rsa.EncryptPKCS1v15(rand.Reader, publicKey, src)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func RsaDecoding(src []byte, path string) ([]byte, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	bytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+	block, _ := pem.Decode(bytes)
+	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+	return rsa.DecryptPKCS1v15(rand.Reader, privateKey, src)
 }
